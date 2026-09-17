@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Check, Download, LoaderCircle, LockKeyhole, MicOff, MoreHorizontal, RotateCcw, Volume2 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import type { ShortClip, TextPosition } from '../types/shorts'
@@ -12,14 +12,14 @@ interface ClipCardProps {
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`
 
 export function ClipCard({ clip, sourceUrl, onUpdate }: ClipCardProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!clip.output) { setPreviewUrl(null); return }
-    const url = URL.createObjectURL(new Blob([clip.output.buffer as ArrayBuffer], { type: 'video/mp4' }))
-    setPreviewUrl(url)
-    return () => URL.revokeObjectURL(url)
+  const previewUrl = useMemo(() => {
+    if (!clip.output) return null
+    return URL.createObjectURL(new Blob([clip.output.buffer as ArrayBuffer], { type: 'video/mp4' }))
   }, [clip.output])
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+  }, [previewUrl])
 
   const download = () => {
     if (clip.output) saveAs(new Blob([clip.output.buffer as ArrayBuffer], { type: 'video/mp4' }), `short-${String(clip.index).padStart(2, '0')}.mp4`)
